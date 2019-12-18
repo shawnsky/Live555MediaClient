@@ -7,6 +7,7 @@
 #include "MediaClientDlg.h"
 #include "afxdialogex.h"
 #include "RTSPReqHelper.h"
+#include "MyVlcPlayer.h"
 #include <iostream>
 #include <fstream>
 
@@ -115,6 +116,8 @@ BOOL CMediaClientDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
+	m_filename = "tmp_audio.mp3";
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -179,12 +182,13 @@ UINT MyRTSPFunction(LPVOID p)
 	{
 		// TODO
 	}
-	if (!socket.Connect("47.102.151.23", 554))
+	if (!socket.Connect("222.31.79.176", 8554))
 	{
 		// TODO
 	}
-	string userInputUrl = "rtsp://47.102.151.23:554/xlt.mp3";
+	//string userInputUrl = "rtsp://47.102.151.23:554/xlt.mp3";
 	//string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
+	string userInputUrl = "rtsp://222.31.79.176:8554/mp3AudioTest";
 
 	RTSPReqHelper rtspHelper;
 	rtspHelper.setSocket(socket);
@@ -210,6 +214,7 @@ UINT MyRTSPFunction(LPVOID p)
 		// TODO
 	}
 	dlg->m_rtp_thread = AfxBeginThread(MyRTPFunction, dlg);
+	
 	rtpThreadState = 1;
 
 	for (;;)
@@ -255,14 +260,17 @@ UINT MyRTPFunction(LPVOID p)
 		if (isFirstFrame)
 		{
 			fs.write(mediaBuff + 16 + 4 + 413, recvCount - 16 - 4 - 413);
+			fs.flush();
 			isFirstFrame = false;
 			// Start VLC Player Thread
 			dlg->m_player_thread = AfxBeginThread(MyPlayFunction, dlg, THREAD_PRIORITY_NORMAL, 0, 0, NULL);
+			playerThreadState = 1;
 
 		}
 		else
 		{
 			fs.write(mediaBuff + 16, recvCount - 16);
+			fs.flush();
 		}
 	}
 	fs.close();
@@ -276,11 +284,21 @@ UINT MyPlayFunction(LPVOID p)
 	for (;;) if (playerThreadState) break;
 
 	CMediaClientDlg* dlg = (CMediaClientDlg*)p;
-	VLCPlayer player = dlg->m_player;
-	player.getMediaPlayer(dlg->m_filename);
-	player.getCacheLength();
-	player.getTime();
-	player.onPlay();
+
+	MyVlcPlayer player;
+	player.Initialize(dlg->m_filename);
+	player.Play();
+
+
+	for (;;)
+	{
+		// Terminate thread condition
+		if (!playerThreadState)
+		{
+			AfxEndThread(0);
+		}
+	}
+	
 	return 0;
 }
 
