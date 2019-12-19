@@ -75,7 +75,6 @@ public:
 
 	void Play()
 	{
-		Sleep(2000);  // Can't play If not 
 		libvlc_media_player_play(vlc_player);
 	}
 

@@ -59,6 +59,8 @@ BEGIN_MESSAGE_MAP(CMediaClientDlg, CDialogEx)
 	ON_MESSAGE(WM_UPDATE_MSG, &CMediaClientDlg::OnUpdateMsg)
 	ON_BN_CLICKED(IDC_BTN_OPEN, &CMediaClientDlg::OnBnClickedBtnOpen)
 	ON_MESSAGE(WM_READY_TO_PLAY, &CMediaClientDlg::OnReadyToPlay)
+	ON_EN_CHANGE(IDC_URL, &CMediaClientDlg::OnEnChangeUrl)
+	ON_BN_CLICKED(IDC_BTN_QUIT, &CMediaClientDlg::OnBnClickedBtnQuit)
 END_MESSAGE_MAP()
 
 
@@ -95,7 +97,7 @@ BOOL CMediaClientDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
-	m_filename = "tmp_audio.mp3";
+	m_filename = "tmp_audio";
 	GetDlgItem(IDC_BTN_PLAY)->EnableWindow(false);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -157,44 +159,79 @@ UINT MyRTSPFunction(LPVOID p)
 	
 	CMediaClientDlg* dlg = (CMediaClientDlg*)p;
 	MySocket socket = dlg->m_rtsp_socket;
+	string url = dlg->m_url;
 	if (!socket.Create("TCP"))
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Fail to initialize!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
-	if (!socket.Connect("222.31.79.176", 8554))
+	if (url.size() == 0)
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Invalid url!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
-	//string userInputUrl = "rtsp://47.102.151.23:554/xlt.mp3";
-	//string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
-	string userInputUrl = "rtsp://222.31.79.176:8554/mp3AudioTest";
+	// Extract IP & Port from url
+	int ipBeg = url.find_first_of("//");
+	int ipEnd = url.find_first_of(":", ipBeg);
+	int portEnd = url.find_first_of("/", ipEnd);
+	string str1, str2;
+	char *serverIp = "";
+	int serverPort;
+	try
+	{
+		str1 = url.substr(ipBeg + 2, ipEnd - ipBeg - 2);
+		str2 = url.substr(ipEnd + 1, portEnd - ipEnd - 1);
+		serverIp = (char*)str1.c_str();
+		serverPort = std::stoi(str2);
+	}
+	catch (const std::exception&)
+	{
+		CString* ps = new CString("[ERROR] Invalid url!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
+	}
+	
+	
+	if (!socket.Connect(serverIp, serverPort))
+	{
+		CString* ps = new CString("[ERROR] Can not connect to server!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
+	}
+	
 
 	RTSPReqHelper rtspHelper;
 	rtspHelper.setSocket(socket);
-	rtspHelper.setUrl(userInputUrl);
+	rtspHelper.setUrl(dlg->m_url);
 	string resp = rtspHelper.options();
 	if (resp.compare("ERROR") == 0)
 	{
 		CString* ps = new CString("[ERROR] Failed to OPTIONS!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 	resp = rtspHelper.describe();
 	if (resp.compare("ERROR") == 0)
 	{
-		CString* ps = new CString("[ERROR] Failed to DESCRIBE!\r\n");
+		CString* ps = new CString("[ERROR] Failed to DESCRIBE! Please try other url.\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 	resp = rtspHelper.setup(4588);
 	if (resp.compare("ERROR") == 0)
 	{
 		CString* ps = new CString("[ERROR] Failed to SETUP!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 	resp = rtspHelper.play();
 	if (resp.compare("ERROR") == 0)
 	{
 		CString* ps = new CString("[ERROR] Failed to PLAY!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 
 	// Start RTP packet receiver Thread
@@ -215,7 +252,9 @@ UINT MyRTSPFunction(LPVOID p)
 		{
 			AfxEndThread(0);
 		}
-		// TODO: Send GET_PARAMTER Timely
+		// TODO: Create a new thread to Send GET_PARAMTER Timely
+		Sleep(1000 * 30);
+		resp = rtspHelper.getParameter();
 	}
 	
 	return 0;
@@ -333,9 +372,6 @@ void CMediaClientDlg::OnBnClickedBtnOpen()
 	// TODO: 在此添加控件通知处理程序代码
 	m_rtsp_thread = AfxBeginThread(MyRTSPFunction, this);
 
-	CString* ps = new CString("[INFO] Request media server...\r\n");
-	PostMessage(WM_UPDATE_MSG, NULL, (LPARAM)ps);
-
 	rtspThreadState = 1;
 
 }
@@ -348,4 +384,32 @@ afx_msg LRESULT CMediaClientDlg::OnReadyToPlay(WPARAM wParam, LPARAM lParam)
 {
 	GetDlgItem(IDC_BTN_PLAY)->EnableWindow(true);
 	return 0;
+}
+
+
+void CMediaClientDlg::OnEnChangeUrl()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CDialogEx::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
+	CString str;
+	GetDlgItem(IDC_URL)->GetWindowText(str);
+	m_url = CStringA(str);
+
+	
+}
+
+
+void CMediaClientDlg::OnBnClickedBtnQuit()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	rtspThreadState = 0;
+	rtpThreadState = 0;
+	playerThreadState = 0;
+	m_rtsp_socket.Close();
+	m_rtp_socket.Close();
+	PostMessage(WM_QUIT, 0, 0);
 }

@@ -44,6 +44,7 @@ public:
 	MySocket m_rtsp_socket;
 	MySocket m_rtp_socket;
 	std::string m_filename;
+	std::string m_url;
 
 	/* Controls */
 	CButton m_openBtn;
@@ -61,4 +62,7 @@ public:
 	afx_msg void OnBnClickedBtnOpen();
 protected:
 	afx_msg LRESULT OnReadyToPlay(WPARAM wParam, LPARAM lParam);
+public:
+	afx_msg void OnEnChangeUrl();
+	afx_msg void OnBnClickedBtnQuit();
 };

@@ -43,6 +43,10 @@ void RTSPReqHelper::setSocket(MySocket s)
 }
 string parseValueOf(string src, string field)
 {
+	if (src.size() == 0)
+	{
+		return "ERROR";
+	}
 	int beg = src.find(field);
 	int end = src.find("\r\n", beg);
 	return src.substr(beg + field.size(), end - beg - field.size());
@@ -168,6 +172,7 @@ string RTSPReqHelper::play()
 }
 string RTSPReqHelper::pause()
 {
+	// Build Request Line
 	string line = "PAUSE ";
 	line.append(url);
 	line.append(" RTSP/1.0\r\n");
@@ -178,10 +183,19 @@ string RTSPReqHelper::pause()
 	line.append("Session: ");
 	line.append(sessionId);
 	line.append("\r\n\r\n");
-	return line;
+	// Send over TCP
+	socket.Send(line);
+	// Handle Response
+	memset(recvBuff, 0, sizeof(recvBuff));
+	socket.TCPRecv(recvBuff, sizeof(recvBuff));
+	string s(recvBuff);
+	// TODO
+
+	return s;
 }
 string RTSPReqHelper::teardown()
 {
+	// Build Request Line
 	string line = "TEARDOWN ";
 	line.append(url);
 	line.append(" RTSP/1.0\r\n");
@@ -192,10 +206,19 @@ string RTSPReqHelper::teardown()
 	line.append("Session: ");
 	line.append(sessionId);
 	line.append("\r\n\r\n");
-	return line;
+	// Send over TCP
+	socket.Send(line);
+	// Handle Response
+	memset(recvBuff, 0, sizeof(recvBuff));
+	socket.TCPRecv(recvBuff, sizeof(recvBuff));
+	string s(recvBuff);
+	// TODO
+
+	return s;
 }
 string RTSPReqHelper::getParameter()
 {
+	// Build Request Line
 	string line = "GET_PARAMETER ";
 	line.append(url);
 	line.append(" RTSP/1.0\r\n");
@@ -206,7 +229,15 @@ string RTSPReqHelper::getParameter()
 	line.append("Session: ");
 	line.append(sessionId);
 	line.append("\r\n\r\n");
-	return line;
+	// Send over TCP
+	socket.Send(line);
+	// Handle Response
+	memset(recvBuff, 0, sizeof(recvBuff));
+	socket.TCPRecv(recvBuff, sizeof(recvBuff));
+	string s(recvBuff);
+	// TODO
+
+	return s;
 }
 RTSPReqHelper::~RTSPReqHelper(void)
 {
