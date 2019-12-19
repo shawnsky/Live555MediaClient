@@ -17,6 +17,10 @@ using namespace std;
 #define new DEBUG_NEW
 #endif
 
+/* User messages definition */
+#define WM_UPDATE_MSG WM_USER + 100
+#define WM_READY_TO_PLAY WM_UPDATE_MSG + 1
+
 /* Thread function definition */
 UINT MyPlayFunction(LPVOID p);
 UINT MyRTPFunction(LPVOID p);
@@ -26,38 +30,6 @@ volatile int rtspThreadState = 0;
 volatile int rtpThreadState = 0;
 volatile int playerThreadState = 0;
 
-
-// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-
-class CAboutDlg : public CDialogEx
-{
-public:
-	CAboutDlg();
-
-// 对话框数据
-#ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_ABOUTBOX };
-#endif
-
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
-// 实现
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
-{
-}
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
-END_MESSAGE_MAP()
 
 
 // CMediaClientDlg 对话框
@@ -73,6 +45,10 @@ CMediaClientDlg::CMediaClientDlg(CWnd* pParent /*=nullptr*/)
 void CMediaClientDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_BTN_PLAY, m_playBtn);
+	DDX_Control(pDX, IDC_BTN_OPEN, m_openBtn);
+	DDX_Text(pDX, IDC_URL, m_urlText);
+	DDX_Text(pDX, IDC_MSG, m_msgText);
 }
 
 BEGIN_MESSAGE_MAP(CMediaClientDlg, CDialogEx)
@@ -80,6 +56,9 @@ BEGIN_MESSAGE_MAP(CMediaClientDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_PLAY, &CMediaClientDlg::OnBnClickedBtnPlay)
+	ON_MESSAGE(WM_UPDATE_MSG, &CMediaClientDlg::OnUpdateMsg)
+	ON_BN_CLICKED(IDC_BTN_OPEN, &CMediaClientDlg::OnBnClickedBtnOpen)
+	ON_MESSAGE(WM_READY_TO_PLAY, &CMediaClientDlg::OnReadyToPlay)
 END_MESSAGE_MAP()
 
 
@@ -117,6 +96,7 @@ BOOL CMediaClientDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 
 	m_filename = "tmp_audio.mp3";
+	GetDlgItem(IDC_BTN_PLAY)->EnableWindow(false);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -125,8 +105,7 @@ void CMediaClientDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
+		
 	}
 	else
 	{
@@ -182,13 +161,13 @@ UINT MyRTSPFunction(LPVOID p)
 	{
 		// TODO
 	}
-	if (!socket.Connect("10.211.55.3", 8554))
+	if (!socket.Connect("222.31.79.176", 8554))
 	{
 		// TODO
 	}
 	//string userInputUrl = "rtsp://47.102.151.23:554/xlt.mp3";
 	//string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
-	string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
+	string userInputUrl = "rtsp://222.31.79.176:8554/mp3AudioTest";
 
 	RTSPReqHelper rtspHelper;
 	rtspHelper.setSocket(socket);
@@ -196,26 +175,38 @@ UINT MyRTSPFunction(LPVOID p)
 	string resp = rtspHelper.options();
 	if (resp.compare("ERROR") == 0)
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to OPTIONS!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
 	resp = rtspHelper.describe();
 	if (resp.compare("ERROR") == 0)
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to DESCRIBE!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
 	resp = rtspHelper.setup(4588);
 	if (resp.compare("ERROR") == 0)
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to SETUP!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
 	resp = rtspHelper.play();
 	if (resp.compare("ERROR") == 0)
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to PLAY!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
+
+	// Start RTP packet receiver Thread
 	dlg->m_rtp_thread = AfxBeginThread(MyRTPFunction, dlg);
 	
+
+	CString* ps = new CString("[INFO] Request media resource successful!\r\n");
+	PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+
 	rtpThreadState = 1;
+
+
 
 	for (;;)
 	{
@@ -243,12 +234,18 @@ UINT MyRTPFunction(LPVOID p)
 	bool isFirstFrame = true;
 	if (!socket.Create("UDP"))
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to setup UDP socket!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
 	if (!socket.Bind(4588))
 	{
-		// TODO
+		CString* ps = new CString("[ERROR] Failed to bind UDP address!\r\n");
+		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 	}
+
+	CString* ps = new CString("[INFO] Begin to receive stream...\r\n");
+	PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+
 	for (;;)
 	{
 		// Terminate thread condition
@@ -264,7 +261,9 @@ UINT MyRTPFunction(LPVOID p)
 			isFirstFrame = false;
 			// Start VLC Player Thread
 			dlg->m_player_thread = AfxBeginThread(MyPlayFunction, dlg, THREAD_PRIORITY_NORMAL, 0, 0, NULL);
-			playerThreadState = 1;
+			CString* ps = new CString("[INFO] Press [Play] to play!\r\n");
+			PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+			PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_READY_TO_PLAY, NULL, NULL);
 
 		}
 		else
@@ -282,6 +281,9 @@ UINT MyRTPFunction(LPVOID p)
 UINT MyPlayFunction(LPVOID p)
 {
 	for (;;) if (playerThreadState) break;
+
+	CString* ps = new CString("[INFO] Start playing...\r\n");
+	PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 
 	CMediaClientDlg* dlg = (CMediaClientDlg*)p;
 
@@ -308,6 +310,42 @@ UINT MyPlayFunction(LPVOID p)
 void CMediaClientDlg::OnBnClickedBtnPlay()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	playerThreadState = 1;
+	
+}
+
+
+afx_msg LRESULT CMediaClientDlg::OnUpdateMsg(WPARAM wParam, LPARAM lParam)
+{
+	CString* msg = (CString*)lParam;
+	CString str;
+	GetDlgItem(IDC_MSG)->GetWindowText(str);
+	str += *msg;
+	GetDlgItem(IDC_MSG)->SetWindowText(str);
+
+	
+	return 0;
+}
+
+
+void CMediaClientDlg::OnBnClickedBtnOpen()
+{
+	// TODO: 在此添加控件通知处理程序代码
 	m_rtsp_thread = AfxBeginThread(MyRTSPFunction, this);
+
+	CString* ps = new CString("[INFO] Request media server...\r\n");
+	PostMessage(WM_UPDATE_MSG, NULL, (LPARAM)ps);
+
 	rtspThreadState = 1;
+
+}
+
+
+
+
+
+afx_msg LRESULT CMediaClientDlg::OnReadyToPlay(WPARAM wParam, LPARAM lParam)
+{
+	GetDlgItem(IDC_BTN_PLAY)->EnableWindow(true);
+	return 0;
 }

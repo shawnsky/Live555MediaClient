@@ -44,7 +44,21 @@ public:
 	MySocket m_rtsp_socket;
 	MySocket m_rtp_socket;
 	std::string m_filename;
+
+	/* Controls */
+	CButton m_openBtn;
+	CButton m_playBtn;
+	CString m_urlText;
+	CString m_msgText;
+
+	
 	
 
 
+protected:
+	afx_msg LRESULT OnUpdateMsg(WPARAM wParam, LPARAM lParam);
+public:
+	afx_msg void OnBnClickedBtnOpen();
+protected:
+	afx_msg LRESULT OnReadyToPlay(WPARAM wParam, LPARAM lParam);
 };
