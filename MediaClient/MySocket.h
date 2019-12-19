@@ -1,3 +1,13 @@
+/**
+ * @file MySocket.h
+ *
+ * Wrapper Windows socket operate
+ *
+ *
+ * @author Chen xiaotian
+ * @version 0.1 19/12/2019
+ *
+ */
 #pragma once
 #include <string>
 #include "CInitSock.h"

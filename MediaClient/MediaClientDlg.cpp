@@ -182,13 +182,13 @@ UINT MyRTSPFunction(LPVOID p)
 	{
 		// TODO
 	}
-	if (!socket.Connect("222.31.79.176", 8554))
+	if (!socket.Connect("10.211.55.3", 8554))
 	{
 		// TODO
 	}
 	//string userInputUrl = "rtsp://47.102.151.23:554/xlt.mp3";
 	//string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
-	string userInputUrl = "rtsp://222.31.79.176:8554/mp3AudioTest";
+	string userInputUrl = "rtsp://10.211.55.3:8554/mp3AudioTest";
 
 	RTSPReqHelper rtspHelper;
 	rtspHelper.setSocket(socket);

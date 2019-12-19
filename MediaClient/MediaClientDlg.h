@@ -4,7 +4,6 @@
 
 #pragma once
 #include"MySocket.h"
-#include "VLCPlayer.h"
 
 
 // CMediaClientDlg 对话框
@@ -44,8 +43,7 @@ public:
 	CWinThread* m_player_thread;
 	MySocket m_rtsp_socket;
 	MySocket m_rtp_socket;
-	VLCPlayer m_player;
-	string m_filename;
+	std::string m_filename;
 	
 
 

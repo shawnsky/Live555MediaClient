@@ -1,3 +1,13 @@
+/**
+ * @file CInitSock.h
+ *
+ * Winsock initialize
+ *
+ *
+ * @author Chen xiaotian
+ * @version 0.1 19/12/2019
+ *
+ */
 #include <winsock2.h>
 #pragma comment(lib, "WS2_32")
 class CInitSock

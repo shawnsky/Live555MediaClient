@@ -1,8 +1,13 @@
-/*
-	My VLC player class
-	author
-*/
-
+/**
+ * @file MyVlcPlayer.h
+ *
+ * Wrapper libvlc API
+ *
+ *
+ * @author Chen xiaotian
+ * @version 0.1 19/12/2019
+ *
+ */
 #pragma once
 #include "vlc.h"
 #include <string>

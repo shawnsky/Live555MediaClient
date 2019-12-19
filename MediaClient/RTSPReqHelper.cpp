@@ -1,3 +1,14 @@
+/**
+ * @file RTSPReqHelper.cpp
+ *
+ * For Build RTSP requests, send request over TCP
+ * and parse response simply.
+ *
+ * @author Chen xiaotian
+ * @version 0.1 19/12/2019 
+ *
+ */
+
 #include "stdafx.h"
 #include "RTSPReqHelper.h"
 

@@ -1,3 +1,14 @@
+/**
+ * @file RTSPReqHelper.h
+ *
+ * For Build RTSP requests, send request over TCP
+ * and parse response simply.
+ *
+ * @author Chen xiaotian
+ * @version 0.1 19/12/2019
+ *
+ */
+
 #pragma once
 #include <string>
 #include "MySocket.h"
