@@ -201,10 +201,10 @@ UINT MyRTSPFunction(LPVOID p)
 		AfxEndThread(0);
 	}
 	
-
 	RTSPReqHelper rtspHelper;
 	rtspHelper.setSocket(socket);
 	rtspHelper.setUrl(dlg->m_url);
+
 	string resp = rtspHelper.options();
 	if (resp.compare("ERROR") == 0)
 	{
@@ -275,11 +275,13 @@ UINT MyRTPFunction(LPVOID p)
 	{
 		CString* ps = new CString("[ERROR] Failed to setup UDP socket!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 	if (!socket.Bind(4588))
 	{
 		CString* ps = new CString("[ERROR] Failed to bind UDP address!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
+		AfxEndThread(0);
 	}
 
 	CString* ps = new CString("[INFO] Begin to receive stream...\r\n");
@@ -406,7 +408,7 @@ void CMediaClientDlg::OnEnChangeUrl()
 void CMediaClientDlg::OnBnClickedBtnQuit()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	rtspThreadState = 0;
+
 	rtpThreadState = 0;
 	playerThreadState = 0;
 	m_rtsp_socket.Close();

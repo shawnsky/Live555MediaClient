@@ -45,7 +45,8 @@ public:
 		sockaddr_in sin;
 		sin.sin_family = AF_INET;
 		sin.sin_port = htons(port);
-		sin.sin_addr = *(in_addr*)ip->h_addr_list[0];
+		//sin.sin_addr = *(in_addr*)ip->h_addr_list[0];
+		sin.sin_addr.s_addr = htonl(ADDR_ANY);
 		if (::bind(socket, (sockaddr*)&sin, sizeof(sin)) == SOCKET_ERROR)
 		{
 			return false;
@@ -83,11 +84,8 @@ public:
 	int UDPRecv(char *buff, int len)
 	{
 		int iResult;
-		sockaddr_in sin;
-		int size = sizeof(sin);
-		memset(buff, 0, len);
 		/* no need to save sockaddr */
-		iResult = ::recvfrom(socket, buff, len, 0, (sockaddr*)&sin, &size);
+		iResult = ::recvfrom(socket, buff, len, 0, NULL, NULL);
 		return iResult;
 	}
 	void Close()
