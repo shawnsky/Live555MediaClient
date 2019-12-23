@@ -192,9 +192,13 @@ UINT MyRTSPFunction(LPVOID p)
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
 		AfxEndThread(0);
 	}
-	
-	
-	if (!socket.Connect(serverIp, serverPort))
+
+	// Resolve domain to IP
+	gethostname(serverIp, sizeof(serverIp));
+	hostent *host = gethostbyname(serverIp);
+	char *ip = inet_ntoa(*(in_addr*)host->h_addr_list[0]);
+
+	if (!socket.Connect(ip, serverPort))
 	{
 		CString* ps = new CString("[ERROR] Can not connect to server!\r\n");
 		PostMessage(AfxGetMainWnd()->GetSafeHwnd(), WM_UPDATE_MSG, NULL, (LPARAM)ps);
@@ -297,7 +301,7 @@ UINT MyRTPFunction(LPVOID p)
 		int recvCount = socket.UDPRecv(mediaBuff, sizeof(mediaBuff));
 		if (isFirstFrame)
 		{
-			fs.write(mediaBuff + 16 + 4 + 413, recvCount - 16 - 4 - 413);
+			fs.write(mediaBuff + 16, recvCount - 16);
 			fs.flush();
 			isFirstFrame = false;
 			// Start VLC Player Thread

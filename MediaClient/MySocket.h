@@ -38,14 +38,9 @@ public:
 	}
 	bool Bind(int port)
 	{
-		char hostname[256] = { 0 };
-		gethostname(hostname, sizeof(hostname));
-		hostent *ip = gethostbyname(hostname);
-
 		sockaddr_in sin;
 		sin.sin_family = AF_INET;
 		sin.sin_port = htons(port);
-		//sin.sin_addr = *(in_addr*)ip->h_addr_list[0];
 		sin.sin_addr.s_addr = htonl(ADDR_ANY);
 		if (::bind(socket, (sockaddr*)&sin, sizeof(sin)) == SOCKET_ERROR)
 		{
